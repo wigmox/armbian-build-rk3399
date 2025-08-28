@@ -1,0 +1,347 @@
+name: Z1-build-one
+
+on:
+  workflow_dispatch:
+    inputs:
+
+      board:
+        description: '设备型号'
+        required: true
+        type: choice
+        options:
+          - fine3399
+          - firefly-rk3399
+          - rk-sapphire
+          - rock-4b
+          - nanopim4v2
+          - nanopct4
+          - fmx1
+          - aio-3399c-ai
+          - verypc-d039
+          - yskj
+          - dg3399
+        default: "aio-3399c-ai"
+
+      version:
+        description: 'Armbian 版本 (带 .y 匹配最新 tag)'
+        required: true
+        type: choice
+        options:
+          - v24.11
+          - v25.02
+          - v25.2.y
+          - v25.5.y
+          - v25.8.y
+          - v25.11.y
+          - main
+        default: v25.11.y
+
+      branch:
+        description: '系统分支'
+        required: true
+        type: choice
+        options:
+          - current
+          - edge
+          - vendor
+        default: current
+
+      release:
+        description: '选择系统版本'
+        required: true
+        type: choice
+        options:
+          - 'Debian11 🎯 >> Bullseye'
+          - 'Debian12 📚 >> Bookworm'
+          - 'Debian13 🎪 >> Trixie'
+          - 'Ubuntu22.04 🪼 >> Jammy'
+          - 'Ubuntu24.04 🐜 >> Noble'
+          - 'Ubuntu25.04 🐧 >> Plucky'
+        default: 'Debian12 📚 >> Bookworm'
+
+      system:
+        description: '系统类型'
+        required: true
+        type: choice
+        options:
+          - minimal
+          - server
+          - desktop-xfce
+          - desktop-cinnamon
+          - desktop-gnome
+          - desktop-i3-wm
+        default: minimal
+
+      bspfreeze:
+        description: '冻结 BSP'
+        required: false
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+        default: 'yes'
+
+      rootfs:
+        description: 'ROOTFS 分区格式'
+        required: false
+        type: choice
+        options:
+          - ext4
+          - btrfs
+        default: btrfs
+
+      extrawifi:
+        description: '编译 WIFI 驱动'
+        required: false
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+        default: 'yes'
+
+      vendor:
+        description: '源码支持'
+        required: false
+        type: choice
+        options:
+          - Armbian
+          - Armbian-unofficial
+        default: Armbian
+
+env:
+  TZ: Asia/Shanghai
+  REPO_URL: https://github.com/armbian/build.git
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: 检出目标
+        uses: actions/checkout@v5
+
+      - name: 判断要使用的 Armbian 版本
+        id: version_selector
+        run: |
+          USER_CHOICE="${{ inputs.version }}"
+          ARMBIAN_VERSION=""
+
+          # 判断用户选择的是否是动态版本 (以 .y 结尾)
+          if [[ "$USER_CHOICE" == *.y ]]; then
+            # 移除 .y 后缀，得到版本前缀, e.g., "v25.8"
+            VERSION_PREFIX=$(echo "$USER_CHOICE" | sed 's/\.y$//')
+            echo "用户选择了动态版本，开始查找前缀为 ${VERSION_PREFIX} 的最新 tag..."
+
+            # 从 Armbian 远程仓库获取所有 tags，并按版本号逆序排序 (最新版本在最前面)
+            # 使用 `git ls-remote` 可以在不克隆整个仓库的情况下获取 tags，速度非常快
+            ALL_TAGS=$(git ls-remote --tags --sort='-v:refname' $REPO_URL)
+
+            # 1. 优先查找稳定版 (不含 "trunk")
+            # 格式类似: v25.8.1
+            LATEST_STABLE_TAG=$(echo "${ALL_TAGS}" | grep "refs/tags/${VERSION_PREFIX}" | grep -v "trunk" | head -n 1 | sed 's/.*\///')
+            
+            if [[ -n "$LATEST_STABLE_TAG" ]]; then
+              ARMBIAN_VERSION="$LATEST_STABLE_TAG"
+              echo "找到最新的稳定版 tag: ${ARMBIAN_VERSION}"
+            else
+              # 2. 如果没有稳定版，则查找最新的 trunk 版
+              # 格式类似: v25.8.0-trunk.1, v25.8.0-trunk.2
+              echo "未找到 ${VERSION_PREFIX} 系列的稳定版，开始查找最新的 trunk 版..."
+              LATEST_TRUNK_TAG=$(echo "${ALL_TAGS}" | grep "refs/tags/${VERSION_PREFIX}" | grep "trunk" | head -n 1 | sed 's/.*\///')
+
+              if [[ -n "$LATEST_TRUNK_TAG" ]]; then
+                ARMBIAN_VERSION="$LATEST_TRUNK_TAG"
+                echo "找到最新的 trunk 版 tag: ${ARMBIAN_VERSION}"
+              else
+                echo "::error:: 无法为前缀 ${VERSION_PREFIX} 找到任何匹配的 tag！"
+                exit 1
+              fi
+            fi
+          else
+            # 如果用户选择的是一个固定版本 (如 v24.11 或 main)，直接使用
+            ARMBIAN_VERSION="$USER_CHOICE"
+            echo "用户选择了固定版本: ${ARMBIAN_VERSION}"
+          fi
+
+          # 将最终确定的版本号输出到 GITHUB_ENV，供后续步骤使用
+          echo "armbian_version=${ARMBIAN_VERSION}" >> $GITHUB_ENV
+
+
+      - name: 检出 Armbian 源码
+        run: |
+          git clone -q --single-branch --depth=1 --branch=${{ env.armbian_version }} $REPO_URL
+
+      - name: 设置系统类型
+        env:
+          DESKTOP_APPGROUPS: "browsers chat desktop_tools editors email internet multimedia office programming remote_desktop"
+          
+        run: |
+          INPUTS_SYSTEM="${{ inputs.system }}"
+
+          # 检查输入是否以 "desktop-" 开头
+          if [[ "$INPUTS_SYSTEM" == desktop-* ]]; then
+            echo "设置桌面类型"
+            # 使用 sed 命令来删除 "desktop-" 前缀
+            # DESKTOP_NAME=$(echo "$INPUTS_SYSTEM" | sed 's/^desktop-//' || echo "")
+            DESKTOP_NAME=$(echo "${{ inputs.system }}"  | awk -F'desktop-' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print tolower($2)}')
+            echo "桌面类型: ${DESKTOP_NAME}"
+            # 使用提取出的桌面名称动态构建参数字符串
+            SYSTEM_ARGS="BUILD_DESKTOP=yes \
+                  BUILD_MINIMAL=no \
+                  DESKTOP_ENVIRONMENT=${DESKTOP_NAME} \
+                  DESKTOP_ENVIRONMENT_CONFIG_NAME=config_base \
+                  DESKTOP_APPGROUPS_SELECTED=\"${{ env.DESKTOP_APPGROUPS }}\""
+          # 非桌面版
+          elif [ "${{ inputs.system }}" == "minimal" ]; then
+            echo "Setting up for minimal system..."
+            SYSTEM_ARGS="BUILD_DESKTOP=no \
+            BUILD_MINIMAL=yes"
+          elif [ "${{ inputs.system }}" == "server" ]; then
+            echo "Setting up for server system..."
+            SYSTEM_ARGS="BUILD_DESKTOP=no \
+            BUILD_MINIMAL=no"
+          fi
+          echo "BUILD_ARGS=$SYSTEM_ARGS" >> $GITHUB_ENV
+          # echo "BUILD_ARGS=$(printf %q "$SYSTEM_ARGS")" >> $GITHUB_ENV
+
+      - name: 显示选择所要编译的的系统类型
+        run: |
+          echo "env.BUILD_ARGS: ${{ env.BUILD_ARGS }}"
+          echo "status=success" >> ${GITHUB_OUTPUT}
+
+      - name: 提取系统代号
+        run: |
+          # 使用awk提取最后一个>>之后的部分
+          RELEASE_CODE=$(echo "${{ inputs.release }}"  | awk -F'>>' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print tolower($2)}')
+          # 如果没有>>，则使用整个字符串（防止错误）
+          if [ -z "$RELEASE_CODE" ]; then
+          RELEASE_CODE="${{ inputs.release }}"
+          fi
+          echo "release_code=$RELEASE_CODE" >> $GITHUB_ENV
+
+      - name: 显示系统代号
+        run: |
+          echo "env.release_code: ${{ env.release_code }}"
+
+      - name: 初始化信息
+        run: |
+          sudo -E apt-get -y update
+          sudo -E apt-get -y install neofetch
+          neofetch --off --color_blocks off --stdout
+
+          echo -e "\033[32mCPU info:\033[0m"
+          lscpu
+
+          echo -e "\033[32mMemory info:\033[0m"
+          free -h
+
+          echo -e "\033[32mDisk space info:\033[0m"
+          df -hT ${PWD}
+
+          echo "清理前的磁盘空间:"
+          df -h
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          echo "清理后的磁盘空间:"
+          df -h
+
+      - name: 清理并安装编译环境
+        run: |
+          sudo -E apt-get -y update
+          export DEBIAN_FRONTEND=noninteractive
+          sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* || true
+          sudo -E apt-get -y install btrfs-progs tzdata $(curl -fsSL https://tinyurl.com/ubuntu2204-build-armbian)
+          sudo -E systemctl daemon-reload
+          # sudo -E apt-get -y full-upgrade
+          sudo -E apt-get -y autoremove --purge
+          sudo -E apt-get clean
+          # echo 加载 Btrfs 内核模块
+          sudo modprobe btrfs
+          # echo 确认模块已加载
+          lsmod | grep btrfs
+          # echo 检查内核是否支持
+          grep BTRFS /boot/config-$(uname -r)
+          sudo timedatectl set-timezone "$TZ"
+
+      - name: 复制 USERPATCHES 内容到源码根目录
+        run: |
+          cp -rvf userpatches build/
+          # cp -f rockchip64_common.inc.txt build/config/sources/families/include/rockchip64_common.inc
+          # sed -i 's|https://github.com/armbian/rkbin|https://github.com/wingonwu/rkbin|g' build/extensions/rkbin-tools.sh
+          # grep 'wingonwu/rkbin' build/extensions/rkbin-tools.sh
+
+      - name: 编译 [ ${{ env.armbian_version }} - ${{ inputs.board }} - ${{ inputs.release }} - ${{ inputs.branch }} - ${{ inputs.system }} - ${{ inputs.rootfs }} ]
+        run: |
+          pushd build
+          bash ./compile.sh build BOARD=${{ inputs.board }} \
+          BRANCH=${{ inputs.branch }} \
+          ${{ env.BUILD_ARGS }} \
+          KERNEL_CONFIGURE=no \
+          RELEASE=${{ env.release_code }} \
+          COMPRESS_OUTPUTIMAGE=sha,img,xz \
+          BSPFREEZE=${{ inputs.bspfreeze }} \
+          IMAGE_VERSION=${{ env.armbian_version }} \
+          ROOTFS_TYPE=${{ inputs.rootfs }} \
+          VENDOR=${{ inputs.vendor }} \
+          EXTRAWIFI=${{ inputs.extrawifi }} \
+          NETWORKING_STACK=network-manager
+          popd
+
+      - name: 显示剩余空间
+        run: |
+          df -hT ${PWD}
+
+      - name: 显示镜像
+        run: |
+          ls -lh ${{ github.workspace }}/build/output/images
+          echo "buildtime=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+
+      - name: 上传镜像
+        uses: ncipollo/release-action@main
+        if: success()
+        with:
+          tag: "${{ inputs.vendor }}_${{ inputs.version }}_${{ env.release_code }}_${{ inputs.branch }}_${{ inputs.system }}_b${{ env.buildtime }}"
+          artifacts: "${{ github.workspace }}/build/output/images/*"
+          allowUpdates: true
+          removeArtifacts: false
+          replacesArtifacts: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            ### 💿 Armbian 镜像信息
+            - 💻 设备型号:${{ inputs.board }}
+            - 🖥 Armbian 版本: ${{ inputs.release }}
+            - 🖥 系统分支：${{ inputs.branch }}
+            - 🗂 源码: https://github.com/armbian/build.git
+            - 🔖 源码分支: ${{ env.armbian_version }}
+            - ⏱️ 编译时间: ${{ env.buildtime }}
+            - 💽 ROOTFS 格式: ${{ inputs.rootfs }}
+            ### ⚙ 设置信息
+            - 👤 默认用户名:  root
+            - 🔒 默认密码:  1234
+            - ⌨ 修改 apt 源: armbian-apt
+            - ⌨ 配置命令: armbian-config
+            - ⌨ 升级命令: armbian-upgrade
+            - ⌨ 安装命令: armbian-install 
+          draft: false
+          prerelease: false
+
+      - name: 清理 releases 和 workflows
+        uses: ophub/delete-releases-workflows@main
+        with:
+          delete_releases: true                  # 清理releases开关，必须存在，如果不开就写false
+          prerelease_option: all                 # 设置清理releases是否区分预发行版本
+          # releases_keep_keyword: targz/Update    # 清理releases时候保留关键字符名称的tags不清理（targz/Update 改成你需要的关键字符,不需要的就不附加此项）
+          releases_keep_latest: 10               # 清理releases时候排除关键字符tags外，再保留N个时间靠前的发布不清理
+          delete_tags: true                      # 清理releases时候清理tags，一般都开启同步清理的
+          delete_workflows: true                # 清理workflows开关，必须存在，如果不开就写false
+          # workflows_keep_keyword: lede          # 清理workflows时候保留关键字符名称的runs不清理（lede 改成你需要的关键字符,不需要的就不附加此项）
+          workflows_keep_day: 10             # 清理workflows时候排除关键字符runs外，再保留N个时间靠前的runs不清理
+          repo: ${{ github.repository }}        # 清理仓库设置，默认为您启动本程序的自身仓库
+          gh_token: ${{ secrets.GITHUB_TOKEN }}   # GITHUB_TOKEN，仓库密匙，必须存在
+
