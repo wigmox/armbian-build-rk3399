@@ -27,7 +27,6 @@ on:
         type: choice
         options:
           - v25.08
-          - v24.11
           - main
         default: v25.08
 
@@ -92,14 +91,14 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
 
       - name: Free disk space
         run: |
           echo "Disk space before cleanup:"
-          df -h
+          df -hT
           sudo rm -rf /usr/local/.ghcup
           sudo rm -rf /opt/hostedtoolcache/CodeQL
           sudo rm -rf /usr/local/lib/android/sdk/ndk
@@ -108,7 +107,7 @@ jobs:
           sudo rm -rf /usr/local/share/boost
           sudo apt-get clean
           echo "Disk space after cleanup:"
-          df -h
+          df -hT
 
       - name: Install required packages
         run: |
