@@ -171,7 +171,9 @@ jobs:
           COMPRESS_OUTPUTIMAGE=sha,img,xz \
           BSPFREEZE=${{ inputs.bspfreeze }} \
           IMAGE_VERSION=${{ inputs.version }} \
-          VENDOR=${{ inputs.vendor }}
+          VENDOR=${{ inputs.vendor }} \
+          BETA=no \
+          HOST=armbian \
           popd
 
       - name: Show remaining space
