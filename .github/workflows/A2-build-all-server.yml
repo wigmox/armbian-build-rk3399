@@ -120,7 +120,7 @@ jobs:
           IMAGE_VERSION=${{ inputs.version }} \
           VENDOR=${{ inputs.vendor }} \
           BETA=no \
-          HOST=armbian \
+          HOST=armbian
           popd
 
       - name: Show remaining space
