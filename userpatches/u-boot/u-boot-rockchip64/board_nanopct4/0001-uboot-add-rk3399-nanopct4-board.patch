@@ -1,4 +1,4 @@
-From ef99a4fa22d39e5d7be4a7e68164aa66df27e6a9 Mon Sep 17 00:00:00 2001
+From 1f35d8076215f075f92ddc56394ddb1f7c07e29e Mon Sep 17 00:00:00 2001
 From: kaixinos <kaixinos@outlook.com>
 Date: Sun, 15 Jun 2025 22:16:56 +0800
 Subject: [PATCH] uboot add rk3399-nanopct4 board
@@ -7,9 +7,9 @@ Signed-off-by: kaixinos <kaixinos@outlook.com>
 ---
  arch/arm/dts/Makefile                    |   1 +
  arch/arm/dts/rk3399-nanopct4-u-boot.dtsi |  17 +
- arch/arm/dts/rk3399-nanopct4.dts         | 874 +++++++++++++++++++++++
- configs/nanopct4-rk3399_defconfig        |  74 ++
- 4 files changed, 966 insertions(+)
+ arch/arm/dts/rk3399-nanopct4.dts         | 802 +++++++++++++++++++++++
+ configs/nanopct4-rk3399_defconfig        |  74 +++
+ 4 files changed, 894 insertions(+)
  create mode 100644 arch/arm/dts/rk3399-nanopct4-u-boot.dtsi
  create mode 100644 arch/arm/dts/rk3399-nanopct4.dts
  create mode 100644 configs/nanopct4-rk3399_defconfig
@@ -51,10 +51,10 @@ index 00000000..e237a7a4
 +};
 diff --git a/arch/arm/dts/rk3399-nanopct4.dts b/arch/arm/dts/rk3399-nanopct4.dts
 new file mode 100644
-index 00000000..55770032
+index 00000000..e237e933
 --- /dev/null
 +++ b/arch/arm/dts/rk3399-nanopct4.dts
-@@ -0,0 +1,874 @@
+@@ -0,0 +1,802 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (C) 2025 kaixinos <kaixinos@outlook.com>
@@ -79,9 +79,9 @@ index 00000000..55770032
 +		stdout-path = "serial2:1500000n8";
 +	};
 +
-+	vcc12v0_sys: vcc12v0-sys {
++	dc_12v: dc-12v {
 +		compatible = "regulator-fixed";
-+		regulator-name = "vcc12v0_sys";
++		regulator-name = "dc_12v";
 +		regulator-always-on;
 +		regulator-boot-on;
 +		regulator-min-microvolt = <12000000>;
@@ -95,7 +95,7 @@ index 00000000..55770032
 +		regulator-boot-on;
 +		regulator-min-microvolt = <5000000>;
 +		regulator-max-microvolt = <5000000>;
-+		vin-supply = <&vcc12v0_sys>;
++		vin-supply = <&dc_12v>;
 +	};
 +
 +	vcc3v3_sys: vcc3v3-sys {
@@ -105,7 +105,7 @@ index 00000000..55770032
 +		regulator-boot-on;
 +		regulator-min-microvolt = <3300000>;
 +		regulator-max-microvolt = <3300000>;
-+		vin-supply = <&vcc12v0_sys>;
++		vin-supply = <&dc_12v>;
 +	};
 +
 +	/* switched by pmic_sleep */
@@ -143,9 +143,9 @@ index 00000000..55770032
 +		vin-supply = <&vcc5v0_sys>;
 +	};
 +
-+	vbus_typec: vbus-typec {
++	vcc5v0_typec: vcc5v0-typec {
 +		compatible = "regulator-fixed";
-+		regulator-name = "vbus_typec";
++		regulator-name = "vcc5v0_typec";
 +		regulator-min-microvolt = <5000000>;
 +		regulator-max-microvolt = <5000000>;
 +		enable-active-high;
@@ -217,15 +217,6 @@ index 00000000..55770032
 +		#clock-cells = <0>;
 +	};
 +
-+	sdio_pwrseq: sdio-pwrseq {
-+		compatible = "mmc-pwrseq-simple";
-+		clocks = <&rk808 1>;
-+		clock-names = "ext_clock";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&wifi_enable_h>;
-+		reset-gpios = <&gpio0 RK_PB2 GPIO_ACTIVE_LOW>;
-+	};
-+
 +	fan: pwm-fan {
 +		compatible = "pwm-fan";
 +		/*
@@ -234,15 +225,8 @@ index 00000000..55770032
 +		 */
 +		cooling-levels = <0 12 18 255>;
 +		#cooling-cells = <2>;
-+		fan-supply = <&vcc12v0_sys>;
++		fan-supply = <&dc_12v>;
 +		pwms = <&pwm1 0 50000 0>;
-+	};
-+
-+	ir-receiver {
-+		compatible = "gpio-ir-receiver";
-+		gpios = <&gpio0 RK_PA6 GPIO_ACTIVE_LOW>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&ir_rx>;
 +	};
 +};
 +
@@ -614,7 +598,7 @@ index 00000000..55770032
 +		interrupts = <RK_PA2 IRQ_TYPE_LEVEL_LOW>;
 +		pinctrl-names = "default";
 +		pinctrl-0 = <&usbc0_int>;
-+		vbus-supply = <&vbus_typec>;
++		vbus-supply = <&vcc5v0_typec>;
 +	};
 +};
 +
@@ -626,20 +610,6 @@ index 00000000..55770032
 +	status = "okay";
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&uart0_xfer &uart0_cts &uart0_rts>;
-+
-+	bluetooth {
-+		compatible = "brcm,bcm43438-bt";
-+		clocks = <&rk808 1>;
-+		clock-names = "lpo";
-+		device-wakeup-gpios = <&gpio2 RK_PD2 GPIO_ACTIVE_HIGH>;
-+		host-wakeup-gpios = <&gpio0 RK_PA4 GPIO_ACTIVE_HIGH>;
-+		shutdown-gpios = <&gpio0 RK_PB1 GPIO_ACTIVE_HIGH>;
-+		max-speed = <4000000>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&bt_enable_h &bt_host_wake_l &bt_wake_l>;
-+		vbat-supply = <&vcc3v3_sys>;
-+		vddio-supply = <&vcc_1v8>;
-+	};
 +};
 +
 +&uart2 {
@@ -702,16 +672,7 @@ index 00000000..55770032
 +};
 +
 +&sdio0 {
-+	status = "okay";
-+	bus-width = <4>;
-+	cap-sdio-irq;
-+	cap-sd-highspeed;
-+	keep-power-in-suspend;
-+	mmc-pwrseq = <&sdio_pwrseq>;
-+	non-removable;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&sdio0_bus4 &sdio0_cmd &sdio0_clk>;
-+	sd-uhs-sdr104;
++	status = "disabled";
 +};
 +
 +&pcie_phy {
@@ -893,39 +854,6 @@ index 00000000..55770032
 +		phy_rstb: phy-rstb {
 +			rockchip,pins =
 +				<3 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
-+		};
-+	};
-+
-+	wifi {
-+		wifi_enable_h: wifi-enable-h {
-+			rockchip,pins =
-+				<0 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
-+		};
-+	};
-+
-+	bt {
-+		bt_enable_h: bt-enable-h {
-+			/* external pullup to VCC1V8_PMUPLL */
-+			rockchip,pins =
-+				<0 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
-+		};
-+
-+		bt_wake_l: bt-wake-l {
-+			rockchip,pins =
-+				<2 RK_PD2 RK_FUNC_GPIO &pcfg_pull_none>;
-+		};
-+
-+		bt_host_wake_l: bt-host-wake-l {
-+			rockchip,pins =
-+				<0 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>;
-+		};
-+	};
-+
-+	ir {
-+		ir_rx: ir-rx {
-+			/* external pullup to VCC3V3_SYS, despite being 1.8V :/ */
-+			rockchip,pins =
-+				<0 RK_PA6 1 &pcfg_pull_none>;
 +		};
 +	};
 +};

@@ -1,4 +1,4 @@
-From e024575c5bd74d05515551cbcfb0b011985575e8 Mon Sep 17 00:00:00 2001
+From 59b2f7127e94b5f87175d4bc617197ee23e78ed6 Mon Sep 17 00:00:00 2001
 From: kaixinos <kaixinos@outlook.com>
 Date: Sat, 23 Nov 2024 16:40:00 +0800
 Subject: [PATCH] uboot add rk3399 dg3399 board
@@ -51,7 +51,7 @@ index 00000000..e237a7a4
 +};
 diff --git a/arch/arm/dts/rk3399-dg3399.dts b/arch/arm/dts/rk3399-dg3399.dts
 new file mode 100644
-index 00000000..40d5431f
+index 00000000..435be7cc
 --- /dev/null
 +++ b/arch/arm/dts/rk3399-dg3399.dts
 @@ -0,0 +1,761 @@
@@ -118,7 +118,7 @@ index 00000000..40d5431f
 +		regulator-max-microvolt = <1800000>;
 +	};
 +
-+	vcc5v0_host: vcc5v0-host-regulator {
++	vcc5v0_host: vcc5v0-host {
 +		compatible = "regulator-fixed";
 +		regulator-name = "vcc5v0_host";
 +		enable-active-high;
@@ -129,7 +129,7 @@ index 00000000..40d5431f
 +		vin-supply = <&vcc5v0_sys>;
 +	};
 +
-+	vcc5v0_typec: vcc5v0-typec-regulator {
++	vcc5v0_typec: vcc5v0-typec {
 +		compatible = "regulator-fixed";
 +		regulator-name = "vcc5v0_typec";
 +		enable-active-high;
@@ -150,7 +150,7 @@ index 00000000..40d5431f
 +		vin-supply = <&vcc5v0_sys>;
 +	};
 +
-+	vcc3v3_lan: vcc3v3-lan-regulator {
++	vcc3v3_lan: vcc3v3-lan {
 +		compatible = "regulator-fixed";
 +		regulator-name = "vcc3v3_lan";
 +		regulator-always-on;
@@ -251,11 +251,12 @@ index 00000000..40d5431f
 +};
 +
 +&gpu {
-+	mali-supply = <&vdd_gpu>;
 +	status = "okay";
++	mali-supply = <&vdd_gpu>;
 +};
 +
 +&gmac {
++	status = "okay";
 +	assigned-clock-parents = <&clkin_gmac>;
 +	assigned-clocks = <&cru SCLK_RMII_SRC>;
 +	clock_in_out = "input";
@@ -268,14 +269,13 @@ index 00000000..40d5431f
 +	snps,reset-delays-us = <0 10000 50000>;
 +	tx_delay = <0x28>;
 +	rx_delay = <0x11>;
-+	status = "okay";
 +};
 +
 +&i2c0 {
++	status = "okay";
 +	clock-frequency = <400000>;
 +	i2c-scl-rising-time-ns = <168>;
 +	i2c-scl-falling-time-ns = <4>;
-+	status = "okay";
 +
 +	rk808: pmic@1b {
 +		compatible = "rockchip,rk808";
@@ -522,9 +522,9 @@ index 00000000..40d5431f
 +};
 +
 +&i2c1 {
++	status = "okay";
 +	i2c-scl-rising-time-ns = <300>;
 +	i2c-scl-falling-time-ns = <15>;
-+	status = "okay";
 +};
 +
 +&i2c3 {
@@ -549,6 +549,7 @@ index 00000000..40d5431f
 +};
 +
 +&uart0 {
++	status = "okay";
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&uart0_xfer &uart0_cts &uart0_rts>;
 +};
@@ -590,6 +591,7 @@ index 00000000..40d5431f
 +};
 +
 +&sdhci {
++	status = "okay";
 +	//max-frequency = <150000000>;
 +	bus-width = <8>;
 +	mmc-hs200-1_8v;
@@ -597,10 +599,10 @@ index 00000000..40d5431f
 +	//mmc-hs400-enhanced-strobe;
 +	//keep-power-in-suspend;
 +	non-removable;
-+	status = "okay";
 +};
 +
 +&sdmmc {
++	status = "okay";
 +	clock-frequency = <100000000>;
 +	//max-frequency = <150000000>;
 +	bus-width = <4>;
@@ -613,7 +615,6 @@ index 00000000..40d5431f
 +	cd-gpios = <&gpio0 RK_PA7 GPIO_ACTIVE_LOW>;
 +	//vmmc-supply = <&vcc3v0_sd>;
 +	vqmmc-supply = <&vcc_sdio>;
-+	status = "okay";
 +};
 +
 +&sdio0 {
@@ -648,8 +649,8 @@ index 00000000..40d5431f
 +	};
 +
 +	u2phy0_host: host-port {
-+		phy-supply = <&vcc5v0_host>;
 +		status = "okay";
++		phy-supply = <&vcc5v0_host>;
 +	};
 +};
 +
@@ -661,8 +662,8 @@ index 00000000..40d5431f
 +	};
 +
 +	u2phy1_host: host-port {
-+		phy-supply = <&vcc5v0_host>;
 +		status = "okay";
++		phy-supply = <&vcc5v0_host>;
 +	};
 +};
 +
@@ -717,9 +718,9 @@ index 00000000..40d5431f
 +};
 +
 +&hdmi {
++	status = "okay";
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&hdmi_i2c_xfer>, <&hdmi_cec>;
-+	status = "okay";
 +};
 +
 +&hdmi_in_vopb {
@@ -814,7 +815,6 @@ index 00000000..40d5431f
 +				<3 RK_PB7 RK_FUNC_GPIO &pcfg_output_low>;
 +		};
 +	};
-+
 +};
 diff --git a/configs/dg3399-rk3399_defconfig b/configs/dg3399-rk3399_defconfig
 new file mode 100644

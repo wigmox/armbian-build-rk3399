@@ -1,4 +1,4 @@
-From c39ee0af3243574d762c118cfd937d48ec3cf922 Mon Sep 17 00:00:00 2001
+From 2b279cf5ce2b9f3b7fc4eb3f8d6ccfb4ab6830bd Mon Sep 17 00:00:00 2001
 From: kaixinos <kaixinos@outlook.com>
 Date: Sat, 23 Nov 2024 00:41:10 +0800
 Subject: [PATCH] uboot add rk3399 rock-4b board
@@ -71,7 +71,7 @@ index 00000000..bd8c60b4
 +};
 diff --git a/arch/arm/dts/rk3399-rock-4b.dts b/arch/arm/dts/rk3399-rock-4b.dts
 new file mode 100644
-index 00000000..d8ae0463
+index 00000000..ef3f8d32
 --- /dev/null
 +++ b/arch/arm/dts/rk3399-rock-4b.dts
 @@ -0,0 +1,715 @@
@@ -130,7 +130,7 @@ index 00000000..d8ae0463
 +		vin-supply = <&vcc5v0_sys>;
 +	};
 +
-+	vcc5v0_host: vcc5v0-host-regulator {
++	vcc5v0_host: vcc5v0-host {
 +		compatible = "regulator-fixed";
 +		regulator-name = "vcc5v0_host";
 +		enable-active-high;
@@ -163,7 +163,7 @@ index 00000000..d8ae0463
 +		vin-supply = <&vcc5v0_sys>;
 +	};
 +
-+	vcc3v3_pcie: vcc3v3-pcie-regulator {
++	vcc3v3_pcie: vcc3v3-pcie {
 +		compatible = "regulator-fixed";
 +		enable-active-high;
 +		gpio = <&gpio2 RK_PD2 GPIO_ACTIVE_HIGH>;
@@ -263,11 +263,12 @@ index 00000000..d8ae0463
 +};
 +
 +&gpu {
-+	mali-supply = <&vdd_gpu>;
 +	status = "okay";
++	mali-supply = <&vdd_gpu>;
 +};
 +
 +&gmac {
++	status = "okay";
 +	assigned-clock-parents = <&clkin_gmac>;
 +	assigned-clocks = <&cru SCLK_RMII_SRC>;
 +	clock_in_out = "input";
@@ -280,14 +281,13 @@ index 00000000..d8ae0463
 +	snps,reset-delays-us = <0 10000 50000>;
 +	tx_delay = <0x28>;
 +	rx_delay = <0x11>;
-+	status = "okay";
 +};
 +
 +&i2c0 {
++	status = "okay";
 +	clock-frequency = <400000>;
 +	i2c-scl-rising-time-ns = <168>;
 +	i2c-scl-falling-time-ns = <4>;
-+	status = "okay";
 +
 +	rk808: pmic@1b {
 +		compatible = "rockchip,rk808";
@@ -406,7 +406,7 @@ index 00000000..d8ae0463
 +				regulator-always-on;
 +				regulator-boot-on;
 +				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <3000000>;
++				regulator-max-microvolt = <3300000>;
 +
 +				regulator-state-mem {
 +					regulator-on-in-suspend;
@@ -526,21 +526,21 @@ index 00000000..d8ae0463
 +};
 +
 +&i2c1 {
++	status = "okay";
 +	i2c-scl-rising-time-ns = <300>;
 +	i2c-scl-falling-time-ns = <15>;
-+	status = "okay";
 +};
 +
 +&i2c3 {
++	status = "okay";
 +	i2c-scl-rising-time-ns = <450>;
 +	i2c-scl-falling-time-ns = <15>;
-+	status = "okay";
 +};
 +
 +&i2c4 {
++	status = "okay";
 +	i2c-scl-rising-time-ns = <600>;
 +	i2c-scl-falling-time-ns = <20>;
-+	status = "okay";
 +};
 +
 +&uart0 {
@@ -580,14 +580,15 @@ index 00000000..d8ae0463
 +};
 +
 +&sdhci {
++	status = "okay";
 +	//max-frequency = <150000000>;
 +	bus-width = <8>;
 +	mmc-hs200-1_8v;
 +	non-removable;
-+	status = "okay";
 +};
 +
 +&sdmmc {
++	status = "okay";
 +	clock-frequency = <150000000>;
 +	max-frequency = <150000000>;
 +	bus-width = <4>;
@@ -599,7 +600,6 @@ index 00000000..d8ae0463
 +	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_bus4 &sdmmc_cd>;
 +	cd-gpios = <&gpio0 RK_PA7 GPIO_ACTIVE_LOW>;
 +	vqmmc-supply = <&vcc_sdio>;
-+	status = "okay";
 +};
 +
 +&sdio0 {
@@ -611,16 +611,16 @@ index 00000000..d8ae0463
 +};
 +
 +&pcie0 {
++	status = "okay";
++	vpcie0v9-supply = <&vcc_0v9>;
++	vpcie1v8-supply = <&vcc_1v8>;
++	vpcie3v3-supply = <&vcc3v3_pcie>;
++	vpcie12v-supply = <&dc_12v>;
 +	ep-gpios = <&gpio4 RK_PD3 GPIO_ACTIVE_HIGH>;
 +	num-lanes = <4>;
 +	pinctrl-0 = <&pcie_clkreqnb_cpm>;
 +	pinctrl-names = "default";
-+	vpcie12v-supply = <&dc_12v>;
-+	vpcie0v9-supply = <&vcc_0v9>;
-+	vpcie1v8-supply = <&vcc_1v8>;
-+	vpcie3v3-supply = <&vcc3v3_pcie>;
 +	bus-scan-delay-ms = <1500>;
-+	status = "okay";
 +};
 +
 +&cdn_dp {
@@ -643,8 +643,8 @@ index 00000000..d8ae0463
 +	};
 +
 +	u2phy0_host: host-port {
-+		phy-supply = <&vcc5v0_host>;
 +		status = "okay";
++		phy-supply = <&vcc5v0_host>;
 +	};
 +};
 +
@@ -656,8 +656,8 @@ index 00000000..d8ae0463
 +	};
 +
 +	u2phy1_host: host-port {
-+		phy-supply = <&vcc5v0_host>;
 +		status = "okay";
++		phy-supply = <&vcc5v0_host>;
 +	};
 +};
 +
@@ -712,12 +712,12 @@ index 00000000..d8ae0463
 +};
 +
 +&hdmi {
++	status = "okay";
 +	avdd-0v9-supply = <&vcca0v9_hdmi>;
 +	avdd-1v8-supply = <&vcca1v8_hdmi>;
 +	ddc-i2c-bus = <&i2c3>;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&hdmi_cec>;
-+	status = "okay";
 +};
 +
 +&hdmi_in_vopb {
