@@ -129,36 +129,6 @@
 			linux,code = <KEY_VOLUMEUP>;
 			press-threshold-microvolt = <1750>;
 		};
-
-		vol-down-key {
-			label = "volume down";
-			linux,code = <KEY_VOLUMEDOWN>;
-			press-threshold-microvolt = <297500>;
-		};
-
-		menu-key {
-			label = "menu";
-			linux,code = <KEY_MENU>;
-			press-threshold-microvolt = <1305500>;
-		};
-
-		home-key {
-			label = "home";
-			linux,code = <KEY_HOME>;
-			press-threshold-microvolt = <621250>;
-		};
-
-		back-key {
-			label = "back";
-			linux,code = <KEY_BACK>;
-			press-threshold-microvolt = <980000>;
-		};
-
-		camera-key {
-			label = "camera";
-			linux,code = <KEY_CAMERA>;
-			press-threshold-microvolt = <787500>;
-		};
 	};
 
 	clkin_gmac: external-gmac-clock {
@@ -807,14 +777,14 @@
 	};
 
 	usb-typec {
-		usbc0_int: usbc0-int {
-			rockchip,pins =
-				<1 RK_PA2 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-
 		vcc5v0_typec_en: vcc5v0-typec-en {
 			rockchip,pins =
 				<1 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		usbc0_int: usbc0-int {
+			rockchip,pins =
+				<1 RK_PA2 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
 

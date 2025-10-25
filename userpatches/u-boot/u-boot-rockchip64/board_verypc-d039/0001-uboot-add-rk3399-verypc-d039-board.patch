@@ -1,7 +1,7 @@
-From 9307079081b9d0832beadac47a62a4ad71cf9961 Mon Sep 17 00:00:00 2001
+From 3a1506bc4db9cc97d18d4441f6d8ae24041f920a Mon Sep 17 00:00:00 2001
 From: kaixinos <kaixinos@outlook.com>
 Date: Sat, 23 Nov 2024 16:40:00 +0800
-Subject: [PATCH] uboot add verypc d039 board
+Subject: [PATCH] uboot add rk3399 verypc d039 board
 
 ---
  arch/arm/dts/Makefile                       |   1 +
@@ -68,7 +68,7 @@ index 00000000..eebce117
 +};
 diff --git a/arch/arm/dts/rk3399-verypc-d039.dts b/arch/arm/dts/rk3399-verypc-d039.dts
 new file mode 100644
-index 00000000..7b42616e
+index 00000000..07f7dad6
 --- /dev/null
 +++ b/arch/arm/dts/rk3399-verypc-d039.dts
 @@ -0,0 +1,742 @@
@@ -139,7 +139,7 @@ index 00000000..7b42616e
 +		regulator-max-microvolt = <1800000>;
 +	};
 +
-+	vcc5v0_host: vcc5v0-host-regulator {
++	vcc5v0_host: vcc5v0-host {
 +		compatible = "regulator-fixed";
 +		regulator-name = "vcc5v0_host";
 +		enable-active-high;
@@ -162,7 +162,7 @@ index 00000000..7b42616e
 +		vin-supply = <&vcc5v0_sys>;
 +	};
 +
-+	vcc3v3_lan: vcc3v3-lan-regulator {
++	vcc3v3_lan: vcc3v3-lan {
 +		compatible = "regulator-fixed";
 +		regulator-name = "vcc3v3_lan";
 +		regulator-always-on;
@@ -263,11 +263,12 @@ index 00000000..7b42616e
 +};
 +
 +&gpu {
-+	mali-supply = <&vdd_gpu>;
 +	status = "okay";
++	mali-supply = <&vdd_gpu>;
 +};
 +
 +&gmac {
++	status = "okay";
 +	assigned-clock-parents = <&clkin_gmac>;
 +	assigned-clocks = <&cru SCLK_RMII_SRC>;
 +	clock_in_out = "input";
@@ -280,14 +281,13 @@ index 00000000..7b42616e
 +	snps,reset-delays-us = <0 10000 50000>;
 +	tx_delay = <0x28>;
 +	rx_delay = <0x11>;
-+	status = "okay";
 +};
 +
 +&i2c0 {
++	status = "okay";
 +	clock-frequency = <400000>;
 +	i2c-scl-rising-time-ns = <168>;
 +	i2c-scl-falling-time-ns = <4>;
-+	status = "okay";
 +
 +	rk808: pmic@1b {
 +		compatible = "rockchip,rk808";
@@ -408,7 +408,7 @@ index 00000000..7b42616e
 +				regulator-always-on;
 +				regulator-boot-on;
 +				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <3000000>;
++				regulator-max-microvolt = <3300000>;
 +
 +				regulator-state-mem {
 +					regulator-on-in-suspend;
@@ -534,9 +534,9 @@ index 00000000..7b42616e
 +};
 +
 +&i2c1 {
++	status = "okay";
 +	i2c-scl-rising-time-ns = <300>;
 +	i2c-scl-falling-time-ns = <15>;
-+	status = "okay";
 +};
 +
 +&i2c3 {
@@ -550,9 +550,9 @@ index 00000000..7b42616e
 +};
 +
 +&uart0 {
++	status = "okay";
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&uart0_xfer &uart0_cts>;
-+	status = "okay";
 +};
 +
 +&uart2 {
@@ -593,6 +593,7 @@ index 00000000..7b42616e
 +};
 +
 +&sdhci {
++	status = "okay";
 +	//max-frequency = <150000000>;
 +	bus-width = <8>;
 +	mmc-hs200-1_8v;
@@ -600,10 +601,10 @@ index 00000000..7b42616e
 +	//mmc-hs400-enhanced-strobe;
 +	//keep-power-in-suspend;
 +	non-removable;
-+	status = "okay";
 +};
 +
 +&sdmmc {
++	status = "okay";
 +	clock-frequency = <100000000>;
 +	max-frequency = <100000000>;
 +	bus-width = <4>;
@@ -616,7 +617,6 @@ index 00000000..7b42616e
 +	cd-gpios = <&gpio0 RK_PA7 GPIO_ACTIVE_LOW>;
 +	//vmmc-supply = <&vcc3v3_sd>;
 +	vqmmc-supply = <&vcc_sdio>;
-+	status = "okay";
 +};
 +
 +&sdio0 {
@@ -651,8 +651,8 @@ index 00000000..7b42616e
 +	};
 +
 +	u2phy0_host: host-port {
-+		phy-supply = <&vcc5v0_host>;
 +		status = "okay";
++		phy-supply = <&vcc5v0_host>;
 +	};
 +};
 +
@@ -664,8 +664,8 @@ index 00000000..7b42616e
 +	};
 +
 +	u2phy1_host: host-port {
-+		phy-supply = <&vcc5v0_host>;
 +		status = "okay";
++		phy-supply = <&vcc5v0_host>;
 +	};
 +};
 +
@@ -720,9 +720,9 @@ index 00000000..7b42616e
 +};
 +
 +&hdmi {
++	status = "okay";
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&hdmi_i2c_xfer>, <&hdmi_cec>;
-+	status = "okay";
 +};
 +
 +&hdmi_in_vopb {

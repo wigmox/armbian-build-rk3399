@@ -1,4 +1,4 @@
-From 84b7504bc3cc8bb64e5a6eba239195f272a804b7 Mon Sep 17 00:00:00 2001
+From a7279e77e2c744599ab2221a2c793ba30b4b6fd1 Mon Sep 17 00:00:00 2001
 From: kaixinos <kaixinos@outlook.com>
 Date: Fri, 22 Nov 2024 23:30:58 +0800
 Subject: [PATCH] uboot add rk3399 rk-sapphire board
@@ -51,7 +51,7 @@ index 00000000..9d124398
 +};
 diff --git a/arch/arm/dts/rk3399-rk-sapphire.dts b/arch/arm/dts/rk3399-rk-sapphire.dts
 new file mode 100644
-index 00000000..f2218840
+index 00000000..fb2111b3
 --- /dev/null
 +++ b/arch/arm/dts/rk3399-rk-sapphire.dts
 @@ -0,0 +1,747 @@
@@ -122,7 +122,7 @@ index 00000000..f2218840
 +		vin-supply = <&vcc3v3_sys>;
 +	};
 +
-+	vcc5v0_host: vcc5v0-host-regulator {
++	vcc5v0_host: vcc5v0-host {
 +		compatible = "regulator-fixed";
 +		regulator-name = "vcc5v0_host";
 +		enable-active-high;
@@ -133,7 +133,7 @@ index 00000000..f2218840
 +		vin-supply = <&vcc5v0_sys>;
 +	};
 +
-+	vcc5v0_typec: vcc5v0-typec-regulator {
++	vcc5v0_typec: vcc5v0-typec {
 +		compatible = "regulator-fixed";
 +		regulator-name = "vcc5v0_typec";
 +		enable-active-high;
@@ -243,8 +243,8 @@ index 00000000..f2218840
 +};
 +
 +&gpu {
-+	mali-supply = <&vdd_gpu>;
 +	status = "okay";
++	mali-supply = <&vdd_gpu>;
 +};
 +
 +&vpu {
@@ -256,6 +256,7 @@ index 00000000..f2218840
 +};
 +
 +&gmac {
++	status = "okay";
 +	assigned-clock-parents = <&clkin_gmac>;
 +	assigned-clocks = <&cru SCLK_RMII_SRC>;
 +	clock_in_out = "input";
@@ -268,14 +269,13 @@ index 00000000..f2218840
 +	snps,reset-delays-us = <0 10000 50000>;
 +	tx_delay = <0x28>;
 +	rx_delay = <0x11>;
-+	status = "okay";
 +};
 +
 +&i2c0 {
++	status = "okay";
 +	clock-frequency = <400000>;
 +	i2c-scl-rising-time-ns = <168>;
 +	i2c-scl-falling-time-ns = <4>;
-+	status = "okay";
 +
 +	rk808: pmic@1b {
 +		compatible = "rockchip,rk808";
@@ -516,15 +516,15 @@ index 00000000..f2218840
 +};
 +
 +&i2c1 {
++	status = "okay";
 +	i2c-scl-rising-time-ns = <300>;
 +	i2c-scl-falling-time-ns = <15>;
-+	status = "okay";
 +};
 +
 +&i2c3 {
++	status = "okay";
 +	i2c-scl-rising-time-ns = <450>;
 +	i2c-scl-falling-time-ns = <15>;
-+	status = "okay";
 +};
 +
 +&i2c4 {
@@ -545,9 +545,9 @@ index 00000000..f2218840
 +};
 +
 +&uart0 {
++	status = "okay";
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&uart0_xfer &uart0_cts &uart0_rts>;
-+	status = "okay";
 +};
 +
 +&uart2 {
@@ -587,15 +587,16 @@ index 00000000..f2218840
 +};
 +
 +&sdhci {
++	status = "okay";
 +	//max-frequency = <150000000>;
 +	bus-width = <8>;
 +	mmc-hs400-1_8v;
 +	mmc-hs400-enhanced-strobe;
 +	non-removable;
-+	status = "okay";
 +};
 +
 +&sdmmc {
++	status = "okay";
 +	clock-frequency = <150000000>;
 +	max-frequency = <150000000>;
 +	bus-width = <4>;
@@ -609,7 +610,6 @@ index 00000000..f2218840
 +	vmmc-supply = <&vcc3v0_sd>;
 +	vqmmc-supply = <&vcc_sdio>;
 +	//card-detect-delay = <800>;
-+	status = "okay";
 +};
 +
 +&sdio0 {
@@ -644,8 +644,8 @@ index 00000000..f2218840
 +	};
 +
 +	u2phy0_host: host-port {
-+		phy-supply = <&vcc5v0_host>;
 +		status = "okay";
++		phy-supply = <&vcc5v0_host>;
 +	};
 +};
 +
@@ -657,8 +657,8 @@ index 00000000..f2218840
 +	};
 +
 +	u2phy1_host: host-port {
-+		phy-supply = <&vcc5v0_host>;
 +		status = "okay";
++		phy-supply = <&vcc5v0_host>;
 +	};
 +};
 +
@@ -713,10 +713,10 @@ index 00000000..f2218840
 +};
 +
 +&hdmi {
++	status = "okay";
 +	ddc-i2c-bus = <&i2c3>;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&hdmi_cec>;
-+	status = "okay";
 +};
 +
 +&hdmi_in_vopb {
